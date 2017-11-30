@@ -1,0 +1,46 @@
+# Symbols we want wasm.js to define at runtime
+_Exit
+abort
+puts
+
+# Musl syscall interface, provided by wasm.js
+__syscall
+__syscall0
+__syscall1
+__syscall2
+__syscall3
+__syscall4
+__syscall5
+__syscall6
+__syscall_cp
+
+# Symbols not supported by clang but currently expected to work on the
+# wasm waterfall
+# TODO(sbc): remove these
+__builtin_isinff
+__builtin_isinfl
+__builtin_clrsb
+__builtin_clrsbl
+__builtin_clrsbll
+__builtin_apply
+__builtin_apply_args
+__builtin_malloc
+
+# Part of musl we still don't compile for wasm
+setjmp
+longjmp
+
+
+# More stuff
+#__eqtf2
+#__multf3
+#__addtf3
+#__subtf3
+#__unordtf2
+#__netf2
+#__fixunstfsi
+#__floatunsitf
+#__fixtfsi
+#__floatsitf
+#__extenddftf2
+
