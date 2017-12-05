@@ -1,0 +1,15 @@
+diff --git a/lib/CodeGen/ItaniumCXXABI.cpp b/lib/CodeGen/ItaniumCXXABI.cpp
+--- a/lib/CodeGen/ItaniumCXXABI.cpp	(revision 319391)
++++ b/lib/CodeGen/ItaniumCXXABI.cpp	(working copy)
+@@ -3587,9 +3587,8 @@
+     return StructorCodegen::RAUW;
+ 
+   if (llvm::GlobalValue::isWeakForLinker(Linkage)) {
+-    // Only ELF and wasm support COMDATs with arbitrary names (C5/D5).
+-    if (CGM.getTarget().getTriple().isOSBinFormatELF() ||
+-        CGM.getTarget().getTriple().isOSBinFormatWasm())
++    // Only ELF support COMDATs with arbitrary names (C5/D5).
++    if (CGM.getTarget().getTriple().isOSBinFormatELF())
+       return StructorCodegen::COMDAT;
+     return StructorCodegen::Emit;
+   }

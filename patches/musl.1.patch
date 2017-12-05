@@ -1,0 +1,26 @@
+diff --git a/Makefile b/Makefile
+index 04573b3c..4c56eeaa 100644
+--- a/Makefile
++++ b/Makefile
+@@ -184,7 +184,8 @@ lib/libc.a: $(AOBJS)
+ 
+ $(EMPTY_LIBS):
+ 	rm -f $@
+-	$(AR) rc $@
++	#$(AR) rc $@
++	echo '!<arch>' > $@
+ 
+ lib/%.o: obj/crt/$(ARCH)/%.o
+ 	cp $< $@
+diff --git a/src/internal/dynlink.h b/src/internal/dynlink.h
+index 5717627a..04c5bc52 100644
+--- a/src/internal/dynlink.h
++++ b/src/internal/dynlink.h
+@@ -93,6 +93,6 @@ struct fdpic_dummy_loadmap {
+ #define DYN_CNT 32
+ 
+ typedef void (*stage2_func)(unsigned char *, size_t *);
+-typedef _Noreturn void (*stage3_func)(size_t *);
++typedef void (*stage3_func)(size_t *);
+ 
+ #endif
