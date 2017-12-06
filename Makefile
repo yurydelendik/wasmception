@@ -25,6 +25,12 @@ src/compiler-rt.CLONED:
 	cd src/; svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk compiler-rt
 	touch src/compiler-rt.CLONED
 
+src/libcxx.CLONED:
+	mkdir -p src/
+	cd src/; svn co http://llvm.org/svn/llvm-project/libcxx/trunk libcxx
+	cd src/libcxx; patch -p 1 < $(ROOT_DIR)/patches/libcxx.1.patch
+	touch src/libcxx.CLONED
+
 build/llvm.BUILT: src/llvm.CLONED
 	mkdir -p build/llvm
 	cd build/llvm; cmake -G "Unix Makefiles" \
@@ -69,6 +75,28 @@ build/compiler-rt.BUILT: src/compiler-rt.CLONED build/llvm.BUILT
 	cd build/compiler-rt; make -j 8 install
 	touch build/compiler-rt.BUILT
 
-build: build/llvm.BUILT build/musl.BUILT build/compiler-rt.BUILT
+build/libcxx.BUILT: build/llvm.BUILT src/libcxx.CLONED build/compiler-rt.BUILT build/musl.BUILT
+	mkdir -p build/libcxx
+	cd build/libcxx; cmake -G "Unix Makefiles" \
+		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)//wasm_standalone.cmake \
+		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
+		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+		-DLIBCXX_ENABLE_THREADS:BOOL=OFF \
+		-DLIBCXX_ENABLE_STDIN:BOOL=OFF \
+		-DLIBCXX_ENABLE_STDOUT:BOOL=OFF \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DLIBCXX_ENABLE_SHARED:BOOL=OFF \
+		-DLIBCXX_ENABLE_EXPERIMENTAL_LIBRARY:BOOL=OFF \
+		-DLIBCXX_ENABLE_FILESYSTEM:BOOL=OFF \
+		-DLIBCXX_ENABLE_EXCEPTIONS:BOOL=OFF \
+		-DLIBCXX_ENABLE_RTTI:BOOL=OFF \
+		-DCMAKE_C_FLAGS=--target=wasm32-unknown-unknown-wasm \
+		-DCMAKE_CXX_FLAGS="--target=wasm32-unknown-unknown-wasm -D__WASM32__ -D_LIBCPP_HAS_MUSL_LIBC" \
+		--debug-trycompile \
+		../../src/libcxx
+	cd build/libcxx; make -j 8 install
+	touch build/libcxx.BUILT
+
+build: build/llvm.BUILT build/musl.BUILT build/compiler-rt.BUILT build/libcxx.BUILT
 
 .PHONY: default clean build
