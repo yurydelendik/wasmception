@@ -51,7 +51,7 @@ build/musl.BUILT: src/musl.CLONED build/llvm.BUILT
 	mkdir -p build/musl
 	cd build/musl; ../../src/musl/configure \
 		CC=../../dist/bin/clang \
-		CFLAGS="--target=wasm32-unknown-unknown-wasm" \
+		CFLAGS="--target=wasm32-unknown-unknown-wasm -O3" \
 		--prefix=$(ROOT_DIR)/sysroot \
 		wasm32
 	make -C build/musl -j 8 install CROSS_COMPILE=$(ROOT_DIR)/dist/bin/llvm-
@@ -67,7 +67,7 @@ build/compiler-rt.BUILT: src/compiler-rt.CLONED build/llvm.BUILT
 		-DCOMPILER_RT_INCLUDE_TESTS=OFF \
 		-DCOMPILER_RT_ENABLE_IOS=OFF \
 		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=On \
-		-DCMAKE_C_FLAGS=--target=wasm32-unknown-unknown-wasm \
+		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm -O1" \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCOMPILER_RT_OS_DIR=. \
 		-DCMAKE_INSTALL_PREFIX=$(ROOT_DIR)/dist/lib/clang/6.0.0/ \
@@ -91,7 +91,7 @@ build/libcxx.BUILT: build/llvm.BUILT src/libcxx.CLONED build/compiler-rt.BUILT b
 		-DLIBCXX_ENABLE_FILESYSTEM:BOOL=OFF \
 		-DLIBCXX_ENABLE_EXCEPTIONS:BOOL=OFF \
 		-DLIBCXX_ENABLE_RTTI:BOOL=OFF \
-		-DCMAKE_C_FLAGS=--target=wasm32-unknown-unknown-wasm \
+		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm" \
 		-DCMAKE_CXX_FLAGS="--target=wasm32-unknown-unknown-wasm -D__WASM32__ -D_LIBCPP_HAS_MUSL_LIBC" \
 		--debug-trycompile \
 		../../src/libcxx
@@ -107,7 +107,8 @@ sysroot/lib/wasmception.wasm: build/llvm.BUILT basics/wasmception.c
 	dist/bin/clang \
 		--target=wasm32-unknown-unknown-wasm \
 		--sysroot=./sysroot basics/wasmception.c \
-		-c -o sysroot/lib/wasmception.wasm
+		-c -O3 \
+		-o sysroot/lib/wasmception.wasm
 
 build: build/llvm.BUILT build/musl.BUILT build/compiler-rt.BUILT build/libcxx.BUILT $(BASICS)
 
