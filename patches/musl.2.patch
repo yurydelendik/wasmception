@@ -1,0 +1,14 @@
+diff --git a/arch/wasm32/atomic_arch.h b/arch/wasm32/atomic_arch.h
+index d067050b..06690e1e 100644
+--- a/arch/wasm32/atomic_arch.h
++++ b/arch/wasm32/atomic_arch.h
+@@ -6,6 +6,8 @@
+ 
+ #define a_barrier() syscall(__NR_membarrier)
+ 
+-#define a_cas(p, t, s) (abort(), s)
++//#define a_cas(p, t, s) (abort(), s)
++#define a_ll(p) (*p)
++#define a_sc(p, v) (p[0] = v)
+ 
+ #define a_crash() abort()

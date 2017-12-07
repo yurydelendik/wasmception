@@ -18,6 +18,7 @@ src/musl.CLONED:
 	mkdir -p src/
 	cd src/; git clone https://github.com/jfbastien/musl.git
 	cd src/musl; patch -p 1 < $(ROOT_DIR)/patches/musl.1.patch
+	cd src/musl; patch -p 1 < $(ROOT_DIR)/patches/musl.2.patch
 	touch src/musl.CLONED
 
 src/compiler-rt.CLONED:
