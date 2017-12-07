@@ -112,4 +112,7 @@ sysroot/lib/wasmception.wasm: build/llvm.BUILT basics/wasmception.c
 
 build: build/llvm.BUILT build/musl.BUILT build/compiler-rt.BUILT build/libcxx.BUILT $(BASICS)
 
-.PHONY: default clean build
+strip: build/llvm.BUILT
+	cd dist/bin; strip clang-6.0 lld llvm-ar
+
+.PHONY: default clean build strip
