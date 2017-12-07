@@ -98,6 +98,17 @@ build/libcxx.BUILT: build/llvm.BUILT src/libcxx.CLONED build/compiler-rt.BUILT b
 	cd build/libcxx; make -j 8 install
 	touch build/libcxx.BUILT
 
-build: build/llvm.BUILT build/musl.BUILT build/compiler-rt.BUILT build/libcxx.BUILT
+BASICS=sysroot/include/wasmception.h sysroot/lib/wasmception.wasm
+
+sysroot/include/wasmception.h: basics/wasmception.h
+	cp basics/wasmception.h sysroot/include/
+
+sysroot/lib/wasmception.wasm: build/llvm.BUILT basics/wasmception.c
+	dist/bin/clang \
+		--target=wasm32-unknown-unknown-wasm \
+		--sysroot=./sysroot basics/wasmception.c \
+		-c -o sysroot/lib/wasmception.wasm
+
+build: build/llvm.BUILT build/musl.BUILT build/compiler-rt.BUILT build/libcxx.BUILT $(BASICS)
 
 .PHONY: default clean build
