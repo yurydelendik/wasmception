@@ -1,4 +1,10 @@
 ROOT_DIR=${CURDIR}
+LLVM_REV=320190
+CLANG_REV=320191
+LLD_REV=320178
+MUSL_SHA=e43efbe6
+COMPILER_RT_REV=320181
+LIBCXX_REV=319994
 
 default: build
 
@@ -10,13 +16,26 @@ src/llvm.CLONED:
 	cd src/; svn co http://llvm.org/svn/llvm-project/llvm/trunk llvm
 	cd src/llvm/tools; svn co http://llvm.org/svn/llvm-project/cfe/trunk clang
 	cd src/llvm/tools; svn co http://llvm.org/svn/llvm-project/lld/trunk lld
+ifdef LLVM_REV
+	cd src/llvm; svn up -r$(LLVM_REV)
+endif
+ifdef CLANG_REV
+	cd src/llvm/tools/clang; svn up -r$(CLANG_REV)
+endif
+ifdef LLD_REV
+	cd src/llvm/tools/lld; svn up -r$(LLD_REV)
+endif
 	cd src/llvm; patch -p 1 < $(ROOT_DIR)/patches/llvm.1.patch
 	cd src/llvm/tools/clang; patch -p 1 < $(ROOT_DIR)/patches/clang.1.patch
+	cd src/llvm/tools/lld; patch -p 1 < $(ROOT_DIR)/patches/lld.1.patch
 	touch src/llvm.CLONED
 
 src/musl.CLONED:
 	mkdir -p src/
 	cd src/; git clone https://github.com/jfbastien/musl.git
+ifdef MUSL_SHA
+	cd src/musl; git checkout $(MUSL_SHA)
+endif
 	cd src/musl; patch -p 1 < $(ROOT_DIR)/patches/musl.1.patch
 	cd src/musl; patch -p 1 < $(ROOT_DIR)/patches/musl.2.patch
 	touch src/musl.CLONED
@@ -24,11 +43,17 @@ src/musl.CLONED:
 src/compiler-rt.CLONED:
 	mkdir -p src/
 	cd src/; svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk compiler-rt
+ifdef COMPILER_RT_REV
+	cd src/compiler-rt; svn up -r$(COMPILER_RT_REV)
+endif
 	touch src/compiler-rt.CLONED
 
 src/libcxx.CLONED:
 	mkdir -p src/
 	cd src/; svn co http://llvm.org/svn/llvm-project/libcxx/trunk libcxx
+ifdef LIBCXX_REV
+	cd src/libcxx; svn up -r$(LIBCXX_REV)
+endif
 	cd src/libcxx; patch -p 1 < $(ROOT_DIR)/patches/libcxx.1.patch
 	touch src/libcxx.CLONED
 
