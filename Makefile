@@ -1,10 +1,10 @@
 ROOT_DIR=${CURDIR}
-LLVM_REV=320190
-CLANG_REV=320191
-LLD_REV=320178
-MUSL_SHA=e43efbe6
-COMPILER_RT_REV=320181
-LIBCXX_REV=319994
+LLVM_REV=321315
+CLANG_REV=321324
+LLD_REV=321317
+MUSL_SHA=51733cac
+COMPILER_RT_REV=321313
+LIBCXX_REV=321188
 
 default: build
 
@@ -117,7 +117,7 @@ build/libcxx.BUILT: build/llvm.BUILT src/libcxx.CLONED build/compiler-rt.BUILT b
 		-DLIBCXX_ENABLE_EXCEPTIONS:BOOL=OFF \
 		-DLIBCXX_ENABLE_RTTI:BOOL=OFF \
 		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm" \
-		-DCMAKE_CXX_FLAGS="--target=wasm32-unknown-unknown-wasm -D__WASM32__ -D_LIBCPP_HAS_MUSL_LIBC" \
+		-DCMAKE_CXX_FLAGS="--target=wasm32-unknown-unknown-wasm -D_LIBCPP_HAS_MUSL_LIBC" \
 		--debug-trycompile \
 		../../src/libcxx
 	cd build/libcxx; make -j 8 install
