@@ -60,6 +60,7 @@ endif
 build/llvm.BUILT: src/llvm.CLONED
 	mkdir -p build/llvm
 	cd build/llvm; cmake -G "Unix Makefiles" \
+		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCMAKE_INSTALL_PREFIX=$(ROOT_DIR)/dist \
 		-DLLVM_TARGETS_TO_BUILD= \
 		-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly \
