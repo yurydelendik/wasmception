@@ -20,5 +20,5 @@ $(WASMCEPTION)/dist/bin/clang++ --target=wasm32-unknown-unknown-wasm --sysroot=$
 
 ## Required _start
 
-Add `void _start() {}` to make linker happy due to `-nostartfiles` (or use $(WASMCEPTION)/sysroot/lib/wasmception.wasm).
+Add `void _start() {}` (or `extern "C" void _start() { }` in C++) to make linker happy due to `-nostartfiles` (or use $(WASMCEPTION)/sysroot/lib/wasmception.wasm).
 
