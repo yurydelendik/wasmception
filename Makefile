@@ -1,10 +1,11 @@
 ROOT_DIR=${CURDIR}
-LLVM_REV=321315
-CLANG_REV=321324
-LLD_REV=321317
-MUSL_SHA=51733cac
-COMPILER_RT_REV=321313
-LIBCXX_REV=321188
+LLVM_REV=323889
+CLANG_REV=323890
+LLD_REV=323856
+MUSL_SHA=2b2b3bdb
+COMPILER_RT_REV=323837
+LIBCXX_REV=323822
+LIBCXXABI_REV=323600
 
 default: build
 
@@ -25,9 +26,7 @@ endif
 ifdef LLD_REV
 	cd src/llvm/tools/lld; svn up -r$(LLD_REV)
 endif
-	cd src/llvm; patch -p 1 < $(ROOT_DIR)/patches/llvm.1.patch
 	cd src/llvm/tools/clang; patch -p 1 < $(ROOT_DIR)/patches/clang.1.patch
-	cd src/llvm/tools/lld; patch -p 1 < $(ROOT_DIR)/patches/lld.1.patch
 	touch src/llvm.CLONED
 
 src/musl.CLONED:
@@ -37,7 +36,6 @@ ifdef MUSL_SHA
 	cd src/musl; git checkout $(MUSL_SHA)
 endif
 	cd src/musl; patch -p 1 < $(ROOT_DIR)/patches/musl.1.patch
-	cd src/musl; patch -p 1 < $(ROOT_DIR)/patches/musl.2.patch
 	touch src/musl.CLONED
 
 src/compiler-rt.CLONED:
@@ -56,6 +54,14 @@ ifdef LIBCXX_REV
 endif
 	cd src/libcxx; patch -p 1 < $(ROOT_DIR)/patches/libcxx.1.patch
 	touch src/libcxx.CLONED
+
+src/libcxxabi.CLONED:
+	mkdir -p src/
+	cd src/; svn co http://llvm.org/svn/llvm-project/libcxxabi/trunk libcxxabi
+ifdef LIBCXXABI_REV
+	cd src/libcxxabi; svn up -r$(LIBCXXABI_REV)
+endif
+	touch src/libcxxabi.CLONED
 
 build/llvm.BUILT: src/llvm.CLONED
 	mkdir -p build/llvm
@@ -81,7 +87,7 @@ build/musl.BUILT: src/musl.CLONED build/llvm.BUILT
 		--prefix=$(ROOT_DIR)/sysroot \
 		wasm32
 	make -C build/musl -j 8 install CROSS_COMPILE=$(ROOT_DIR)/dist/bin/llvm-
-	cp src/musl/arch/wasm32/wasm.syms sysroot/lib/
+	cp src/musl/arch/wasm32/libc.imports sysroot/lib/
 	touch build/musl.BUILT
 
 build/compiler-rt.BUILT: src/compiler-rt.CLONED build/llvm.BUILT
@@ -96,16 +102,17 @@ build/compiler-rt.BUILT: src/compiler-rt.CLONED build/llvm.BUILT
 		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm -O1" \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCOMPILER_RT_OS_DIR=. \
-		-DCMAKE_INSTALL_PREFIX=$(ROOT_DIR)/dist/lib/clang/6.0.0/ \
+		-DCMAKE_INSTALL_PREFIX=$(ROOT_DIR)/dist/lib/clang/7.0.0/ \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 		$(ROOT_DIR)/src/compiler-rt/lib/builtins
 	cd build/compiler-rt; make -j 8 install
+	cp -R $(ROOT_DIR)/build/llvm/lib/clang $(ROOT_DIR)/dist/lib/
 	touch build/compiler-rt.BUILT
 
 build/libcxx.BUILT: build/llvm.BUILT src/libcxx.CLONED build/compiler-rt.BUILT build/musl.BUILT
 	mkdir -p build/libcxx
 	cd build/libcxx; cmake -G "Unix Makefiles" \
-		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)//wasm_standalone.cmake \
+		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasm_standalone.cmake \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 		-DLIBCXX_ENABLE_THREADS:BOOL=OFF \
@@ -124,6 +131,30 @@ build/libcxx.BUILT: build/llvm.BUILT src/libcxx.CLONED build/compiler-rt.BUILT b
 	cd build/libcxx; make -j 8 install
 	touch build/libcxx.BUILT
 
+build/libcxxabi.BUILT: src/libcxxabi.CLONED build/libcxx.BUILT build/llvm.BUILT
+	mkdir -p build/libcxxabi
+	cd build/libcxxabi; cmake -G "Unix Makefiles" \
+		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
+		-DCMAKE_CXX_COMPILER_WORKS=ON \
+		-DCMAKE_C_COMPILER_WORKS=ON \
+		-DLIBCXXABI_ENABLE_EXCEPTIONS:BOOL=OFF \
+		-DLIBCXXABI_ENABLE_SHARED:BOOL=OFF \
+		-DLIBCXXABI_ENABLE_THREADS:BOOL=OFF \
+		-DCXX_SUPPORTS_CXX11=ON \
+		-DLLVM_COMPILER_CHECKED=ON \
+		-DCMAKE_BUILD_TYPE=Release \
+		-DLIBCXXABI_LIBCXX_PATH=$(ROOT_DIR)/src/libcxx \
+		-DLIBCXXABI_LIBCXX_INCLUDES=$(ROOT_DIR)/sysroot/include/c++/v1 \
+		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
+		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasm_standalone.cmake \
+		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm" \
+		-DCMAKE_CXX_FLAGS="--target=wasm32-unknown-unknown-wasm -D_LIBCPP_HAS_MUSL_LIBC" \
+		-DUNIX:BOOL=ON \
+		--debug-trycompile \
+		$(ROOT_DIR)/src/libcxxabi
+	cd build/libcxxabi; make -j 8 install
+	touch build/libcxxabi.BUILT
+
 BASICS=sysroot/include/wasmception.h sysroot/lib/wasmception.wasm
 
 sysroot/include/wasmception.h: basics/wasmception.h
@@ -136,7 +167,7 @@ sysroot/lib/wasmception.wasm: build/llvm.BUILT basics/wasmception.c
 		-c -O3 \
 		-o sysroot/lib/wasmception.wasm
 
-build: build/llvm.BUILT build/musl.BUILT build/compiler-rt.BUILT build/libcxx.BUILT $(BASICS)
+build: build/llvm.BUILT build/musl.BUILT build/compiler-rt.BUILT build/libcxxabi.BUILT build/libcxx.BUILT $(BASICS)
 
 strip: build/llvm.BUILT
 	cd dist/bin; strip clang-6.0 lld llvm-ar

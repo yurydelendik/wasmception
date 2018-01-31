@@ -17,7 +17,7 @@ set(CMAKE_C_COMPILER_TARGET ${triple} CACHE STRING "wasmception build")
 set(CMAKE_CXX_COMPILER_TARGET ${triple} CACHE STRING "wasmception build")
 set(CMAKE_C_FLAGS "-v --sysroot=${WASM_SDKROOT}/sysroot" CACHE STRING "wasmception build")
 set(CMAKE_CXX_FLAGS "-v --sysroot=${WASM_SDKROOT}/sysroot -std=c++11" CACHE STRING "wasmception build")
-set(CMAKE_EXE_LINKER_FLAGS "-Wl,--allow-undefined-file=${WASM_SDKROOT}/sysroot/lib/wasm.syms" CACHE STRING "wasmception build")
+set(CMAKE_EXE_LINKER_FLAGS "-Wl,--allow-undefined-file=${WASM_SDKROOT}/sysroot/lib/libc.imports" CACHE STRING "wasmception build")
 
 set(CMAKE_SYSROOT ${WASM_SDKROOT}/sysroot CACHE STRING "wasmception build")
 set(CMAKE_STAGING_PREFIX ${WASM_SDKROOT}/sysroot CACHE STRING "wasmception build")
@@ -32,4 +32,3 @@ set(CMAKE_FIND_ROOT_PATH_MODE_PACKAGE ONLY)
 # Some other hacks
 set(CMAKE_C_COMPILER_WORKS ON)
 set(CMAKE_CXX_COMPILER_WORKS ON)
-
