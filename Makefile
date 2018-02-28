@@ -74,6 +74,7 @@ build/llvm.BUILT: src/llvm.CLONED
 	cd build/llvm; $(MAKE) -j 8 \
 		install-clang \
 		install-lld \
+		install-llc \
 		install-llvm-ar \
 		install-llvm-ranlib \
 		llvm-config
