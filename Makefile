@@ -1,11 +1,11 @@
 ROOT_DIR=${CURDIR}
-LLVM_REV=323889
-CLANG_REV=323890
-LLD_REV=323856
-MUSL_SHA=2b2b3bdb
-COMPILER_RT_REV=323837
-LIBCXX_REV=323822
-LIBCXXABI_REV=323600
+LLVM_REV=326328
+CLANG_REV=326328
+LLD_REV=326328
+MUSL_SHA=d312ecae6d
+COMPILER_RT_REV=326329
+LIBCXX_REV=326329
+LIBCXXABI_REV=326329
 
 default: build
 
@@ -172,4 +172,13 @@ build: build/llvm.BUILT build/musl.BUILT build/compiler-rt.BUILT build/libcxxabi
 strip: build/llvm.BUILT
 	cd dist/bin; strip clang-6.0 lld llvm-ar
 
-.PHONY: default clean build strip
+revisions:
+	cd src/llvm; echo "LLVM_REV=`svn info --show-item revision`"
+	cd src/llvm/tools/clang; echo "CLANG_REV=`svn info --show-item revision`"
+	cd src/llvm/tools/lld; echo "LLD_REV=`svn info --show-item revision`"
+	cd src/musl; echo "MUSL_SHA=`git log -1 --format="%H"`"
+	cd src/compiler-rt; echo "COMPILER_RT_REV=`svn info --show-item revision`"
+	cd src/libcxx; echo "LIBCXX_REV=`svn info --show-item revision`"
+	cd src/libcxxabi; echo "LIBCXXABI_REV=`svn info --show-item revision`"
+
+.PHONY: default clean build strip revisions
