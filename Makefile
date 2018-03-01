@@ -10,7 +10,7 @@ LIBCXXABI_REV=326329
 default: build
 
 clean:
-	rm -rf build src dist sysroot
+	rm -rf build src dist sysroot wasmception-*-bin.tar.gz
 
 src/llvm.CLONED:
 	mkdir -p src/
@@ -182,4 +182,8 @@ revisions:
 	cd src/libcxx; echo "LIBCXX_REV=`svn info --show-item revision`"
 	cd src/libcxxabi; echo "LIBCXXABI_REV=`svn info --show-item revision`"
 
-.PHONY: default clean build strip revisions
+OS_NAME=$(shell uname -s | tr '[:upper:]' '[:lower:]')
+pack:
+	tar czf wasmception-${OS_NAME}-bin.tar.gz dist sysroot
+
+.PHONY: default clean build strip revisions pack
