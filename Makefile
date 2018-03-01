@@ -171,7 +171,7 @@ sysroot/lib/wasmception.wasm: build/llvm.BUILT basics/wasmception.c
 build: build/llvm.BUILT build/musl.BUILT build/compiler-rt.BUILT build/libcxxabi.BUILT build/libcxx.BUILT $(BASICS)
 
 strip: build/llvm.BUILT
-	cd dist/bin; strip clang-6.0 lld llvm-ar
+	cd dist/bin; strip clang-7.0 lld llvm-ar
 
 revisions:
 	cd src/llvm; echo "LLVM_REV=`svn info --show-item revision`"
