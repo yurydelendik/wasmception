@@ -1,11 +1,11 @@
 ROOT_DIR=${CURDIR}
-LLVM_REV=331518
-CLANG_REV=331519
-LLD_REV=331519
-MUSL_SHA=d312ecae6dd3cf
-COMPILER_RT_REV=331520
-LIBCXX_REV=331520
-LIBCXXABI_REV=331520
+LLVM_REV=331690
+CLANG_REV=331691
+LLD_REV=331691
+MUSL_SHA=d312ecae6dd3c
+COMPILER_RT_REV=331694
+LIBCXX_REV=331694
+LIBCXXABI_REV=331694
 
 default: build
 
@@ -84,6 +84,7 @@ build/musl.BUILT: src/musl.CLONED build/llvm.BUILT
 		CC=../../dist/bin/clang \
 		CFLAGS="--target=wasm32-unknown-unknown-wasm -O3" \
 		--prefix=$(ROOT_DIR)/sysroot \
+		--enable-debug \
 		wasm32
 	make -C build/musl -j 8 install CROSS_COMPILE=$(ROOT_DIR)/dist/bin/llvm-
 	cp src/musl/arch/wasm32/libc.imports sysroot/lib/
@@ -92,6 +93,7 @@ build/musl.BUILT: src/musl.CLONED build/llvm.BUILT
 build/compiler-rt.BUILT: src/compiler-rt.CLONED build/llvm.BUILT
 	mkdir -p build/compiler-rt
 	cd build/compiler-rt; cmake -G "Unix Makefiles" \
+		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasm_standalone.cmake \
 		-DCOMPILER_RT_BAREMETAL_BUILD=On \
 		-DCOMPILER_RT_BUILD_XRAY=OFF \
@@ -117,7 +119,7 @@ build/libcxx.BUILT: build/llvm.BUILT src/libcxx.CLONED build/compiler-rt.BUILT b
 		-DLIBCXX_ENABLE_THREADS:BOOL=OFF \
 		-DLIBCXX_ENABLE_STDIN:BOOL=OFF \
 		-DLIBCXX_ENABLE_STDOUT:BOOL=OFF \
-		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_BUILD_TYPE=RelWithDebugInfo \
 		-DLIBCXX_ENABLE_SHARED:BOOL=OFF \
 		-DLIBCXX_ENABLE_EXPERIMENTAL_LIBRARY:BOOL=OFF \
 		-DLIBCXX_ENABLE_FILESYSTEM:BOOL=OFF \
@@ -141,7 +143,7 @@ build/libcxxabi.BUILT: src/libcxxabi.CLONED build/libcxx.BUILT build/llvm.BUILT
 		-DLIBCXXABI_ENABLE_THREADS:BOOL=OFF \
 		-DCXX_SUPPORTS_CXX11=ON \
 		-DLLVM_COMPILER_CHECKED=ON \
-		-DCMAKE_BUILD_TYPE=Release \
+		-DCMAKE_BUILD_TYPE=RelWithDebugInfo \
 		-DLIBCXXABI_LIBCXX_PATH=$(ROOT_DIR)/src/libcxx \
 		-DLIBCXXABI_LIBCXX_INCLUDES=$(ROOT_DIR)/sysroot/include/c++/v1 \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
@@ -163,7 +165,7 @@ sysroot/lib/wasmception.wasm: build/llvm.BUILT basics/wasmception.c
 	dist/bin/clang \
 		--target=wasm32-unknown-unknown-wasm \
 		--sysroot=./sysroot basics/wasmception.c \
-		-c -O3 \
+		-c -O3 -g \
 		-o sysroot/lib/wasmception.wasm
 
 build: build/llvm.BUILT build/musl.BUILT build/compiler-rt.BUILT build/libcxxabi.BUILT build/libcxx.BUILT $(BASICS)
