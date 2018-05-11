@@ -26,6 +26,8 @@ endif
 ifdef LLD_REV
 	cd src/llvm/tools/lld; svn up -r$(LLD_REV)
 endif
+	cd src/llvm; patch -p 3 < $(ROOT_DIR)/patches/llvm.1.patch
+	cd src/llvm/tools/lld; patch -p 3 < $(ROOT_DIR)/patches/lld.1.patch
 	touch src/llvm.CLONED
 
 src/musl.CLONED:

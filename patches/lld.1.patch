@@ -1,0 +1,54 @@
+Index: wasm/InputChunks.h
+===================================================================
+diff --git a/lld/trunk/wasm/InputChunks.h b/lld/trunk/wasm/InputChunks.h
+--- a/lld/trunk/wasm/InputChunks.h	(revision 331691)
++++ b/lld/trunk/wasm/InputChunks.h	(working copy)
+@@ -136,6 +136,9 @@
+   uint32_t getComdat() const override { return Function->Comdat; }
+   const ArrayRef<uint8_t> getFunctionBody() const { return Function->Body; }
+   uint32_t getFunctionInputOffset() const { return getInputSectionOffset(); }
++  uint32_t getFunctionContentInputOffset() const {
++    return getFunctionInputOffset() + Function->FunctionContentOffset;
++  }
+   uint32_t getFunctionIndex() const { return FunctionIndex.getValue(); }
+   bool hasFunctionIndex() const { return FunctionIndex.hasValue(); }
+   void setFunctionIndex(uint32_t Index);
+Index: wasm/InputFiles.cpp
+===================================================================
+diff --git a/lld/trunk/wasm/InputFiles.cpp b/lld/trunk/wasm/InputFiles.cpp
+--- a/lld/trunk/wasm/InputFiles.cpp	(revision 331691)
++++ b/lld/trunk/wasm/InputFiles.cpp	(working copy)
+@@ -43,12 +43,6 @@
+   return MBRef;
+ }
+ 
+-static size_t getFunctionCodeOffset(ArrayRef<uint8_t> FunctionBody) {
+-  unsigned Count;
+-  llvm::decodeULEB128(FunctionBody.data(), &Count);
+-  return Count;
+-}
+-
+ void ObjFile::dumpInfo() const {
+   log("info for: " + getName() +
+       "\n              Symbols : " + Twine(Symbols.size()) +
+@@ -105,9 +99,7 @@
+   }
+   case R_WEBASSEMBLY_FUNCTION_OFFSET_I32:
+     if (auto *Sym = dyn_cast<DefinedFunction>(getFunctionSymbol(Reloc.Index))) {
+-      size_t FunctionCodeOffset =
+-          getFunctionCodeOffset(Sym->Function->getFunctionBody());
+-      return Sym->Function->getFunctionInputOffset() + FunctionCodeOffset +
++      return Sym->Function->getFunctionContentInputOffset() +
+              Reloc.Addend;
+     }
+     return 0;
+@@ -146,7 +138,8 @@
+   case R_WEBASSEMBLY_FUNCTION_OFFSET_I32:
+     if (auto *Sym = dyn_cast<DefinedFunction>(getFunctionSymbol(Reloc.Index))) {
+       size_t FunctionCodeOffset =
+-          getFunctionCodeOffset(Sym->Function->getFunctionBody());
++          Sym->Function->getFunctionInputOffset() -
++          Sym->Function->getFunctionContentInputOffset();
+       return Sym->Function->OutputOffset + FunctionCodeOffset + Reloc.Addend;
+     }
+     return 0;
