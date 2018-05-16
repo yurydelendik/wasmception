@@ -80,8 +80,8 @@ build/llvm.BUILT: src/llvm.CLONED
 
 build/musl.BUILT: src/musl.CLONED build/llvm.BUILT
 	mkdir -p build/musl
-	cd build/musl; ../../src/musl/configure \
-		CC=../../dist/bin/clang \
+	cd build/musl; $(ROOT_DIR)/src/musl/configure \
+		CC=$(ROOT_DIR)/dist/bin/clang \
 		CFLAGS="--target=wasm32-unknown-unknown-wasm -O3" \
 		--prefix=$(ROOT_DIR)/sysroot \
 		--enable-debug \
@@ -128,7 +128,7 @@ build/libcxx.BUILT: build/llvm.BUILT src/libcxx.CLONED build/compiler-rt.BUILT b
 		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm" \
 		-DCMAKE_CXX_FLAGS="--target=wasm32-unknown-unknown-wasm -D_LIBCPP_HAS_MUSL_LIBC" \
 		--debug-trycompile \
-		../../src/libcxx
+		$(ROOT_DIR)/src/libcxx
 	cd build/libcxx; make -j 8 install
 	touch build/libcxx.BUILT
 
