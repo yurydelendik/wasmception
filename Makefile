@@ -1,11 +1,11 @@
 ROOT_DIR=${CURDIR}
-LLVM_REV=331690
-CLANG_REV=331691
-LLD_REV=331691
+LLVM_REV=332519
+CLANG_REV=332519
+LLD_REV=332519
 MUSL_SHA=d312ecae6dd3c
-COMPILER_RT_REV=331694
-LIBCXX_REV=331694
-LIBCXXABI_REV=331694
+COMPILER_RT_REV=332522
+LIBCXX_REV=332522
+LIBCXXABI_REV=332522
 
 default: build
 
@@ -26,8 +26,6 @@ endif
 ifdef LLD_REV
 	cd src/llvm/tools/lld; svn up -r$(LLD_REV)
 endif
-	cd src/llvm; patch -p 3 < $(ROOT_DIR)/patches/llvm.1.patch
-	cd src/llvm/tools/lld; patch -p 3 < $(ROOT_DIR)/patches/lld.1.patch
 	touch src/llvm.CLONED
 
 src/musl.CLONED:
