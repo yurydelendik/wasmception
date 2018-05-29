@@ -1,3 +1,6 @@
+# Any copyright is dedicated to the Public Domain.
+# http://creativecommons.org/publicdomain/zero/1.0/
+
 ROOT_DIR=${CURDIR}
 LLVM_REV=333081
 CLANG_REV=333081
