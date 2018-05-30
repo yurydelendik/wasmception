@@ -23,3 +23,8 @@ Arguments used to build `main.wasm`:
 
 
 Run any small HTTP server (e.g. `python -m SimpleHTTPServer`).
+
+## License
+
+Any copyright is dedicated to the Public Domain.
+http://creativecommons.org/publicdomain/zero/1.0/
