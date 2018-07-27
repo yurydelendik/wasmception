@@ -2,13 +2,13 @@
 # http://creativecommons.org/publicdomain/zero/1.0/
 
 ROOT_DIR=${CURDIR}
-LLVM_REV=333081
-CLANG_REV=333081
-LLD_REV=333081
-MUSL_SHA=d312ecae6dd3c
-COMPILER_RT_REV=333082
-LIBCXX_REV=333082
-LIBCXXABI_REV=333082
+LLVM_REV=338127
+CLANG_REV=338127
+LLD_REV=338127
+MUSL_SHA=edeb5004e6e01
+COMPILER_RT_REV=338128
+LIBCXX_REV=338128
+LIBCXXABI_REV=338128
 
 default: build
 
@@ -78,6 +78,7 @@ build/llvm.BUILT: src/llvm.CLONED
 		install-llc \
 		install-llvm-ar \
 		install-llvm-ranlib \
+		install-llvm-dwarfdump \
 		llvm-config
 	touch build/llvm.BUILT
 
