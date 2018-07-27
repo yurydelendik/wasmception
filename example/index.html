@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<!--
+Any copyright is dedicated to the Public Domain.
+http://creativecommons.org/publicdomain/zero/1.0/
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Test</title>
+</head>
+<body>
+<script type="text/javascript">
+fetch('main.wasm').then(function(response) {
+    response.arrayBuffer().then(function(buffer) {
+        WebAssembly.compile(buffer).then(function(module) {
+
+            const memory = new WebAssembly.Memory({ initial: 32 });
+            const decoder = new TextDecoder("utf-8");
+            const imports = {
+                env: {
+                    memory: memory,
+                    __indirect_function_table: new WebAssembly.Table({ initial: 1, maximum: 1, element: 'anyfunc' }),
+                    __play_with_js: function() {
+                        return 42;
+                    },
+                    __console_log: function(str, len) {
+                        console.log(decoder.decode(memory.buffer.slice(str, str + len)));
+                    },
+                },
+            };
+
+            WebAssembly.instantiate(module, imports).then(function(instance) {
+                console.log(instance.exports.do_something(2));
+            });
+        });
+    });
+});
+</script>
+</body>
+</html>
