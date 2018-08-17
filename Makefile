@@ -129,6 +129,8 @@ build/libcxx.BUILT: build/llvm.BUILT src/libcxx.CLONED build/compiler-rt.BUILT b
 		-DLIBCXX_ENABLE_FILESYSTEM:BOOL=OFF \
 		-DLIBCXX_ENABLE_EXCEPTIONS:BOOL=OFF \
 		-DLIBCXX_ENABLE_RTTI:BOOL=OFF \
+		-DLIBCXX_CXX_ABI=libcxxabi \
+		-DLIBCXX_CXX_ABI_INCLUDE_PATHS=$(ROOT_DIR)/src/libcxxabi/include \
 		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm" \
 		-DCMAKE_CXX_FLAGS="--target=wasm32-unknown-unknown-wasm -D_LIBCPP_HAS_MUSL_LIBC" \
 		--debug-trycompile \
