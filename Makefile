@@ -2,13 +2,13 @@
 # http://creativecommons.org/publicdomain/zero/1.0/
 
 ROOT_DIR=${CURDIR}
-LLVM_REV=338127
-CLANG_REV=338127
-LLD_REV=338127
-MUSL_SHA=edeb5004e6e01
-COMPILER_RT_REV=338128
-LIBCXX_REV=338128
-LIBCXXABI_REV=338128
+LLVM_REV=341960
+CLANG_REV=341960
+LLD_REV=341962
+MUSL_SHA=edeb5004e6e016e326c475ce53199755d76d103f
+COMPILER_RT_REV=341962
+LIBCXX_REV=341962
+LIBCXXABI_REV=341962
 
 default: build
 
@@ -107,7 +107,7 @@ build/compiler-rt.BUILT: src/compiler-rt.CLONED build/llvm.BUILT
 		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm -O1" \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCOMPILER_RT_OS_DIR=. \
-		-DCMAKE_INSTALL_PREFIX=$(ROOT_DIR)/dist/lib/clang/7.0.0/ \
+		-DCMAKE_INSTALL_PREFIX=$(ROOT_DIR)/dist/lib/clang/8.0.0/ \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 		$(ROOT_DIR)/src/compiler-rt/lib/builtins
 	cd build/compiler-rt; make -j 8 install
