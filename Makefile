@@ -10,7 +10,11 @@ COMPILER_RT_REV=341962
 LIBCXX_REV=341962
 LIBCXXABI_REV=341962
 
+VERSION=0.1
+DEBUG_PREFIX_MAP=-fdebug-prefix-map=$(ROOT_DIR)=wasmception://v$(VERSION)
+
 default: build
+	echo "Use --sysroot=$(ROOT_DIR)/sysroot -fdebug-prefix-map=$(ROOT_DIR)=wasmception://v$(VERSION)"
 
 clean:
 	rm -rf build src dist sysroot wasmception-*-bin.tar.gz
@@ -86,7 +90,7 @@ build/musl.BUILT: src/musl.CLONED build/llvm.BUILT
 	mkdir -p build/musl
 	cd build/musl; $(ROOT_DIR)/src/musl/configure \
 		CC=$(ROOT_DIR)/dist/bin/clang \
-		CFLAGS="--target=wasm32-unknown-unknown-wasm -O3" \
+		CFLAGS="--target=wasm32-unknown-unknown-wasm -O3 $(DEBUG_PREFIX_MAP)" \
 		--prefix=$(ROOT_DIR)/sysroot \
 		--enable-debug \
 		wasm32
@@ -104,7 +108,7 @@ build/compiler-rt.BUILT: src/compiler-rt.CLONED build/llvm.BUILT
 		-DCOMPILER_RT_INCLUDE_TESTS=OFF \
 		-DCOMPILER_RT_ENABLE_IOS=OFF \
 		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=On \
-		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm -O1" \
+		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm -O1 $(DEBUG_PREFIX_MAP)" \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCOMPILER_RT_OS_DIR=. \
 		-DCMAKE_INSTALL_PREFIX=$(ROOT_DIR)/dist/lib/clang/8.0.0/ \
@@ -131,8 +135,8 @@ build/libcxx.BUILT: build/llvm.BUILT src/libcxx.CLONED build/compiler-rt.BUILT b
 		-DLIBCXX_ENABLE_RTTI:BOOL=OFF \
 		-DLIBCXX_CXX_ABI=libcxxabi \
 		-DLIBCXX_CXX_ABI_INCLUDE_PATHS=$(ROOT_DIR)/src/libcxxabi/include \
-		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm" \
-		-DCMAKE_CXX_FLAGS="--target=wasm32-unknown-unknown-wasm -D_LIBCPP_HAS_MUSL_LIBC" \
+		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm $(DEBUG_PREFIX_MAP)" \
+		-DCMAKE_CXX_FLAGS="--target=wasm32-unknown-unknown-wasm $(DEBUG_PREFIX_MAP) -D_LIBCPP_HAS_MUSL_LIBC" \
 		--debug-trycompile \
 		$(ROOT_DIR)/src/libcxx
 	cd build/libcxx; make -j 8 install
@@ -154,8 +158,8 @@ build/libcxxabi.BUILT: src/libcxxabi.CLONED build/libcxx.BUILT build/llvm.BUILT
 		-DLIBCXXABI_LIBCXX_INCLUDES=$(ROOT_DIR)/sysroot/include/c++/v1 \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasm_standalone.cmake \
-		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm" \
-		-DCMAKE_CXX_FLAGS="--target=wasm32-unknown-unknown-wasm -D_LIBCPP_HAS_MUSL_LIBC" \
+		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm $(DEBUG_PREFIX_MAP)" \
+		-DCMAKE_CXX_FLAGS="--target=wasm32-unknown-unknown-wasm $(DEBUG_PREFIX_MAP) -D_LIBCPP_HAS_MUSL_LIBC" \
 		-DUNIX:BOOL=ON \
 		--debug-trycompile \
 		$(ROOT_DIR)/src/libcxxabi
@@ -171,13 +175,23 @@ sysroot/lib/wasmception.wasm: build/llvm.BUILT basics/wasmception.c
 	dist/bin/clang \
 		--target=wasm32-unknown-unknown-wasm \
 		--sysroot=./sysroot basics/wasmception.c \
-		-c -O3 -g \
+		-c -O3 -g $(DEBUG_PREFIX_MAP) \
 		-o sysroot/lib/wasmception.wasm
 
 build: build/llvm.BUILT build/musl.BUILT build/compiler-rt.BUILT build/libcxxabi.BUILT build/libcxx.BUILT $(BASICS)
 
 strip: build/llvm.BUILT
-	cd dist/bin; strip clang-7 llc lld llvm-ar
+	cd dist/bin; strip clang-8 llc lld llvm-ar
+
+collect-sources:
+	-rm -rf build/sources build/sources.txt
+	{ find sysroot -name "*.o"; find sysroot -name "*.wasm"; find dist/lib sysroot -name "lib*.a"; } | \
+	  xargs ./list_debug_sources.py | sort > build/sources.txt
+	echo "sysroot/include" >> build/sources.txt
+	for f in $$(cat build/sources.txt); \
+	  do mkdir -p `dirname build/sources/$$f`; cp -R $$f `dirname build/sources/$$f`; done;
+	cd build/sources && { git init; git checkout --orphan v$(VERSION); git add -A .; git commit -m "Sources"; }
+	echo "cd build/sources && git push -f git@github.com:yurydelendik/wasmception.git v$(VERSION)"
 
 revisions:
 	cd src/llvm; echo "LLVM_REV=`svn info --show-item revision`"
@@ -192,4 +206,4 @@ OS_NAME=$(shell uname -s | tr '[:upper:]' '[:lower:]')
 pack:
 	tar czf wasmception-${OS_NAME}-bin.tar.gz dist sysroot
 
-.PHONY: default clean build strip revisions pack
+.PHONY: default clean build strip revisions pack collect-sources
