@@ -42,6 +42,7 @@ ifdef MUSL_SHA
 	cd src/musl; git checkout $(MUSL_SHA)
 endif
 	cd src/musl; patch -p 1 < $(ROOT_DIR)/patches/musl.1.patch
+	cd src/musl; patch -p 1 < $(ROOT_DIR)/patches/musl.2.patch
 	touch src/musl.CLONED
 
 src/compiler-rt.CLONED:

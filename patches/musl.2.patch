@@ -1,0 +1,77 @@
+diff --git a/arch/wasm32/pthread_arch.h b/arch/wasm32/pthread_arch.h
+index 212f4e12..1752ee8e 100644
+--- a/arch/wasm32/pthread_arch.h
++++ b/arch/wasm32/pthread_arch.h
+@@ -7,3 +7,8 @@ static inline struct pthread *__pthread_self(void) {
+ #define CANCEL_REG_IP 16
+ 
+ #define MC_PC gregs[REG_EIP]
++
++#define __wait __wait
++static inline void __wait(volatile int *addr, volatile int *waiters, int cnt, int priv) {}
++static inline void __wake(volatile void *addr, int cnt, int priv) {}
++static inline void __futexwait(volatile void *addr, int val, int priv) {}
+diff --git a/src/internal/pthread_impl.h b/src/internal/pthread_impl.h
+index c2deffb9..8be15e0b 100644
+--- a/src/internal/pthread_impl.h
++++ b/src/internal/pthread_impl.h
+@@ -150,6 +150,8 @@ void __vm_unlock(void);
+ 
+ int __timedwait(volatile int *, int, clockid_t, const struct timespec *, int);
+ int __timedwait_cp(volatile int *, int, clockid_t, const struct timespec *, int);
++
++#ifndef __wait
+ void __wait(volatile int *, volatile int *, int, int);
+ static inline void __wake(volatile void *addr, int cnt, int priv)
+ {
+@@ -164,6 +166,7 @@ static inline void __futexwait(volatile void *addr, int val, int priv)
+ 	__syscall(SYS_futex, addr, FUTEX_WAIT|priv, val) != -ENOSYS ||
+ 	__syscall(SYS_futex, addr, FUTEX_WAIT, val);
+ }
++#endif
+ 
+ void __acquire_ptc(void);
+ void __release_ptc(void);
+diff --git a/src/thread/wasm32/__wait.c b/src/thread/wasm32/__wait.c
+new file mode 100644
+index 00000000..d7ebd15a
+--- /dev/null
++++ b/src/thread/wasm32/__wait.c
+@@ -0,0 +1,2 @@
++#include "pthread_impl.h"
++
+diff --git a/src/malloc/wasm32/expand_heap.c b/src/malloc/wasm32/expand_heap.c
+new file mode 100644
+index 00000000..d5a56d36
+--- /dev/null
++++ b/src/malloc/wasm32/expand_heap.c
+@@ -0,0 +1,29 @@
++#include <limits.h>
++#include <stdint.h>
++#include <errno.h>
++#include <sys/mman.h>
++#include "libc.h"
++#include "syscall.h"
++
++#define WASM_PAGE_SIZE 65536
++
++/* Expand the heap in-place use WebAssembly grow_memory operators.
++ * The caller is responsible for locking to prevent concurrent calls. */
++
++void *__expand_heap(size_t *pn)
++{
++	size_t n = *pn;
++	n += -n & WASM_PAGE_SIZE-1;
++	unsigned delta = n / WASM_PAGE_SIZE;
++
++	unsigned res;
++	asm("get_local %1; grow_memory 0; set_local %0": "=r"(res) : "r"(delta));
++	if (res == (unsigned)-1) {
++		errno = ENOMEM;
++		return 0;
++	}
++
++	void *area = (void*)(WASM_PAGE_SIZE * res);
++	*pn = n;
++	return area;
++}
