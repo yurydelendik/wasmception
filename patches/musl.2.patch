@@ -45,7 +45,7 @@ new file mode 100644
 index 00000000..d5a56d36
 --- /dev/null
 +++ b/src/malloc/wasm32/expand_heap.c
-@@ -0,0 +1,29 @@
+@@ -0,0 +1,28 @@
 +#include <limits.h>
 +#include <stdint.h>
 +#include <errno.h>
@@ -64,8 +64,7 @@ index 00000000..d5a56d36
 +	n += -n & WASM_PAGE_SIZE-1;
 +	unsigned delta = n / WASM_PAGE_SIZE;
 +
-+	unsigned res;
-+	asm("get_local %1; grow_memory 0; set_local %0": "=r"(res) : "r"(delta));
++	unsigned res = __builtin_wasm_memory_grow(0, delta);
 +	if (res == (unsigned)-1) {
 +		errno = ENOMEM;
 +		return 0;
