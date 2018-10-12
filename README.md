@@ -15,7 +15,7 @@ $(WASMCEPTION)/dist/bin/clang --target=wasm32-unknown-unknown-wasm --sysroot=$(W
 ## Compile C++ file
 
 ```
-$(WASMCEPTION)/dist/bin/clang++ --target=wasm32-unknown-unknown-wasm --sysroot=$(WASMCEPTION)/sysroot/ hi.cpp -o hi.wasm -nostartfiles -Wl,--no-entry
+$(WASMCEPTION)/dist/bin/clang++ --target=wasm32-unknown-unknown-wasm --sysroot=$(WASMCEPTION)/sysroot/ hi.cpp -o hi.wasm -nostartfiles -Wl,--no-entry -fno-exceptions
 ```
 
 ## Required `main` and `_start` functions
