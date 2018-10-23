@@ -78,6 +78,18 @@ index c2deffb9..cece1953 100644
  
  #define DEFAULT_STACK_SIZE 81920
  #define DEFAULT_GUARD_SIZE 4096
+diff --git a/src/malloc/malloc.c b/src/malloc/malloc.c
+index d72883e1..b583c240 100644
+--- a/src/malloc/malloc.c
++++ b/src/malloc/malloc.c
+@@ -99,6 +99,7 @@ static int bin_index_up(size_t x)
+ 	if (x <= 32) return x;
+ 	x--;
+ 	if (x < 512) return bin_tab[x/8-4] + 1;
++	if (x > 0x1c00) return 63;
+ 	return bin_tab[x/128-4] + 17;
+ }
+ 
 diff --git a/src/malloc/wasm32/expand_heap.c b/src/malloc/wasm32/expand_heap.c
 new file mode 100644
 index 00000000..8c22c63d
