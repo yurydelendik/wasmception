@@ -12,5 +12,6 @@ all:
 		-o main.wasm \
 		-nostartfiles \
 		-Wl,--allow-undefined-file=main.syms,--import-memory,--import-table,--demangle,--no-entry,--no-threads \
+		-Wl,--export=do_something \
 		-fvisibility=hidden \
 		main.c

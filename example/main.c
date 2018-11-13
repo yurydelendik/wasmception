@@ -19,7 +19,6 @@ void console_log(char *str) {
 /*
  * Fn exported to JS
  */
-__attribute__((visibility("default")))
 int do_something(int a) {
 	console_log("I'm speaking from WASM !");
 	return a + __play_with_js();
