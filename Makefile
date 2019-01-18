@@ -2,32 +2,44 @@
 # http://creativecommons.org/publicdomain/zero/1.0/
 
 ROOT_DIR=${CURDIR}
+LLVM_PROJECT_URL=https://github.com/llvm/llvm-project.git
+MUSL_PROJECT_URL=https://github.com/jfbastien/musl.git
+
+#LLVM_PROJECT_BRANCH=release/8.x
 LLVM_PROJECT_SHA=2ed0e79bb8efc3d642e3d8212e17a160f5ebb499
 MUSL_SHA=16d3d3825b4bd125244e43826fb0f0da79a1a4ad
-
 
 VERSION=0.2
 DEBUG_PREFIX_MAP=-fdebug-prefix-map=$(ROOT_DIR)=wasmception://v$(VERSION)
 WASM_TRIPLE=wasm32-unknown-unknown-wasm
 LLVM_VERSION=9
+#DEFAULT_SYSROOT_CFG=-DDEFAUT_SYSROOT=$(ROOT_DIR)/sysroot
 
 default: build
-	echo "Use --sysroot=$(ROOT_DIR)/sysroot -fdebug-prefix-map=$(ROOT_DIR)=wasmception://v$(VERSION)"
+ifdef DEFAULT_SYSROOT_CFG
+	echo "Use $(DEBUG_PREFIX_MAP)"
+else
+	echo "Use --sysroot=$(ROOT_DIR)/sysroot $(DEBUG_PREFIX_MAP)"
+endif
 
 clean:
 	rm -rf build src dist sysroot wasmception-*-bin.tar.gz
 
 src/llvm-project.CLONED:
 	mkdir -p src/
-	cd src/; git clone https://github.com/llvm/llvm-project.git
+	cd src/; git clone $(LLVM_PROJECT_URL)
+ifdef LLVM_PROJECT_BRANCH
+	cd src/llvm-project; git checkout $(LLVM_PROJECT_BRANCH)
+else
 ifdef LLVM_PROJECT_SHA
 	cd src/llvm-project; git checkout $(LLVM_PROJECT_SHA)
+endif
 endif
 	touch src/llvm-project.CLONED
 
 src/musl.CLONED:
 	mkdir -p src/
-	cd src/; git clone https://github.com/jfbastien/musl.git
+	cd src/; git clone $(MUSL_PROJECT_URL)
 ifdef MUSL_SHA
 	cd src/musl; git checkout $(MUSL_SHA)
 endif
@@ -41,6 +53,7 @@ build/llvm.BUILT: src/llvm-project.CLONED
 		-DCMAKE_INSTALL_PREFIX=$(ROOT_DIR)/dist \
 		-DLLVM_TARGETS_TO_BUILD=WebAssembly \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=$(WASM_TRIPLE) \
+		$(DEFAULT_SYSROOT_CFG) \
 		-DLLVM_EXTERNAL_CLANG_SOURCE_DIR=$(ROOT_DIR)/src/llvm-project/clang \
 		-DLLVM_EXTERNAL_LLD_SOURCE_DIR=$(ROOT_DIR)/src/llvm-project/lld \
 		-DLLVM_ENABLE_PROJECTS="lld;clang" \
