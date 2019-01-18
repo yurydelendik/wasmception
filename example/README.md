@@ -5,7 +5,6 @@ Build LLVM with experimental WASM target. Then run the Makefile: `make`.
 
 Arguments used to build `main.wasm`:
 
-  - `--target=wasm32-unknown-unknown-wasm`: tell to CLang we are building WASM bytecode
   - `--sysroot=../sysroot`: gives the sysroot path (with libc + abi)
   - (`-g`): debug symbols
   - `-O3`: optimize, optimize, optimize !

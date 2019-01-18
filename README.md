@@ -9,13 +9,13 @@ Use linker's `--export` parameter to specify exports (with clang use `-Wl,--expo
 ## Compile C file
 
 ```
-$(WASMCEPTION)/dist/bin/clang --target=wasm32-unknown-unknown-wasm --sysroot=$(WASMCEPTION)/sysroot/ hi.c -o hi.wasm -nostartfiles -Wl,--no-entry,--export=foo
+$(WASMCEPTION)/dist/bin/clang --sysroot=$(WASMCEPTION)/sysroot/ hi.c -o hi.wasm -nostartfiles -Wl,--no-entry,--export=foo
 ```
 
 ## Compile C++ file
 
 ```
-$(WASMCEPTION)/dist/bin/clang++ --target=wasm32-unknown-unknown-wasm --sysroot=$(WASMCEPTION)/sysroot/ hi.cpp -o hi.wasm -nostartfiles -Wl,--no-entry,--export=bar -fno-exceptions
+$(WASMCEPTION)/dist/bin/clang++ --sysroot=$(WASMCEPTION)/sysroot/ hi.cpp -o hi.wasm -nostartfiles -Wl,--no-entry,--export=bar -fno-exceptions
 ```
 
 ## Required `main` and `_start` functions

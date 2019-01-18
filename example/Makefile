@@ -5,7 +5,6 @@
 
 all:
 	../dist/bin/clang \
-		--target=wasm32-unknown-unknown-wasm \
 		--sysroot=../sysroot \
 		-g \
 		-O3 \

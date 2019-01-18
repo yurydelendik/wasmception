@@ -2,17 +2,14 @@
 # http://creativecommons.org/publicdomain/zero/1.0/
 
 ROOT_DIR=${CURDIR}
-LLVM_REV=344317
-CLANG_REV=344318
-LLD_REV=344318
-MUSL_SHA=edeb5004e6e016e326c475ce53199755d76d103f
-COMPILER_RT_REV=344320
-LIBCXX_REV=344320
-LIBCXXABI_REV=344320
+LLVM_PROJECT_SHA=2ed0e79bb8efc3d642e3d8212e17a160f5ebb499
+MUSL_SHA=16d3d3825b4bd125244e43826fb0f0da79a1a4ad
 
 
-VERSION=0.1
+VERSION=0.2
 DEBUG_PREFIX_MAP=-fdebug-prefix-map=$(ROOT_DIR)=wasmception://v$(VERSION)
+WASM_TRIPLE=wasm32-unknown-unknown-wasm
+LLVM_VERSION=9
 
 default: build
 	echo "Use --sysroot=$(ROOT_DIR)/sysroot -fdebug-prefix-map=$(ROOT_DIR)=wasmception://v$(VERSION)"
@@ -20,21 +17,13 @@ default: build
 clean:
 	rm -rf build src dist sysroot wasmception-*-bin.tar.gz
 
-src/llvm.CLONED:
+src/llvm-project.CLONED:
 	mkdir -p src/
-	cd src/; svn co http://llvm.org/svn/llvm-project/llvm/trunk llvm
-	cd src/llvm/tools; svn co http://llvm.org/svn/llvm-project/cfe/trunk clang
-	cd src/llvm/tools; svn co http://llvm.org/svn/llvm-project/lld/trunk lld
-ifdef LLVM_REV
-	cd src/llvm; svn up -r$(LLVM_REV)
+	cd src/; git clone https://github.com/llvm/llvm-project.git
+ifdef LLVM_PROJECT_SHA
+	cd src/llvm-project; git checkout $(LLVM_PROJECT_SHA)
 endif
-ifdef CLANG_REV
-	cd src/llvm/tools/clang; svn up -r$(CLANG_REV)
-endif
-ifdef LLD_REV
-	cd src/llvm/tools/lld; svn up -r$(LLD_REV)
-endif
-	touch src/llvm.CLONED
+	touch src/llvm-project.CLONED
 
 src/musl.CLONED:
 	mkdir -p src/
@@ -43,41 +32,19 @@ ifdef MUSL_SHA
 	cd src/musl; git checkout $(MUSL_SHA)
 endif
 	cd src/musl; patch -p 1 < $(ROOT_DIR)/patches/musl.1.patch
-	cd src/musl; patch -p 1 < $(ROOT_DIR)/patches/musl.2.patch
 	touch src/musl.CLONED
 
-src/compiler-rt.CLONED:
-	mkdir -p src/
-	cd src/; svn co http://llvm.org/svn/llvm-project/compiler-rt/trunk compiler-rt
-ifdef COMPILER_RT_REV
-	cd src/compiler-rt; svn up -r$(COMPILER_RT_REV)
-endif
-	touch src/compiler-rt.CLONED
-
-src/libcxx.CLONED:
-	mkdir -p src/
-	cd src/; svn co http://llvm.org/svn/llvm-project/libcxx/trunk libcxx
-ifdef LIBCXX_REV
-	cd src/libcxx; svn up -r$(LIBCXX_REV)
-endif
-	touch src/libcxx.CLONED
-
-src/libcxxabi.CLONED:
-	mkdir -p src/
-	cd src/; svn co http://llvm.org/svn/llvm-project/libcxxabi/trunk libcxxabi
-ifdef LIBCXXABI_REV
-	cd src/libcxxabi; svn up -r$(LIBCXXABI_REV)
-endif
-	touch src/libcxxabi.CLONED
-
-build/llvm.BUILT: src/llvm.CLONED
+build/llvm.BUILT: src/llvm-project.CLONED
 	mkdir -p build/llvm
 	cd build/llvm; cmake -G "Unix Makefiles" \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCMAKE_INSTALL_PREFIX=$(ROOT_DIR)/dist \
-		-DLLVM_TARGETS_TO_BUILD= \
-		-DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly \
-		$(ROOT_DIR)/src/llvm
+		-DLLVM_TARGETS_TO_BUILD=WebAssembly \
+		-DLLVM_DEFAULT_TARGET_TRIPLE=$(WASM_TRIPLE) \
+		-DLLVM_EXTERNAL_CLANG_SOURCE_DIR=$(ROOT_DIR)/src/llvm-project/clang \
+		-DLLVM_EXTERNAL_LLD_SOURCE_DIR=$(ROOT_DIR)/src/llvm-project/lld \
+		-DLLVM_ENABLE_PROJECTS="lld;clang" \
+		$(ROOT_DIR)/src/llvm-project/llvm
 	cd build/llvm; $(MAKE) -j 8 \
 		install-clang \
 		install-lld \
@@ -85,6 +52,9 @@ build/llvm.BUILT: src/llvm.CLONED
 		install-llvm-ar \
 		install-llvm-ranlib \
 		install-llvm-dwarfdump \
+		install-clang-headers \
+		install-llvm-nm \
+		install-llvm-size \
 		llvm-config
 	touch build/llvm.BUILT
 
@@ -92,7 +62,7 @@ build/musl.BUILT: src/musl.CLONED build/llvm.BUILT
 	mkdir -p build/musl
 	cd build/musl; $(ROOT_DIR)/src/musl/configure \
 		CC=$(ROOT_DIR)/dist/bin/clang \
-		CFLAGS="--target=wasm32-unknown-unknown-wasm -O3 $(DEBUG_PREFIX_MAP)" \
+		CFLAGS="-O3 $(DEBUG_PREFIX_MAP)" \
 		--prefix=$(ROOT_DIR)/sysroot \
 		--enable-debug \
 		wasm32
@@ -100,7 +70,7 @@ build/musl.BUILT: src/musl.CLONED build/llvm.BUILT
 	cp src/musl/arch/wasm32/libc.imports sysroot/lib/
 	touch build/musl.BUILT
 
-build/compiler-rt.BUILT: src/compiler-rt.CLONED build/llvm.BUILT
+build/compiler-rt.BUILT: src/llvm-project.CLONED build/llvm.BUILT
 	mkdir -p build/compiler-rt
 	cd build/compiler-rt; cmake -G "Unix Makefiles" \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -110,41 +80,37 @@ build/compiler-rt.BUILT: src/compiler-rt.CLONED build/llvm.BUILT
 		-DCOMPILER_RT_INCLUDE_TESTS=OFF \
 		-DCOMPILER_RT_ENABLE_IOS=OFF \
 		-DCOMPILER_RT_DEFAULT_TARGET_ONLY=On \
-		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm -O1 $(DEBUG_PREFIX_MAP)" \
+		-DCMAKE_C_FLAGS="-O1 $(DEBUG_PREFIX_MAP)" \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCOMPILER_RT_OS_DIR=. \
-		-DCMAKE_INSTALL_PREFIX=$(ROOT_DIR)/dist/lib/clang/8.0.0/ \
+		-DCMAKE_INSTALL_PREFIX=$(ROOT_DIR)/dist/lib/clang/$(LLVM_VERSION).0.0/ \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
-		$(ROOT_DIR)/src/compiler-rt/lib/builtins
+		$(ROOT_DIR)/src/llvm-project/compiler-rt/lib/builtins
 	cd build/compiler-rt; make -j 8 install
 	cp -R $(ROOT_DIR)/build/llvm/lib/clang $(ROOT_DIR)/dist/lib/
 	touch build/compiler-rt.BUILT
 
-build/libcxx.BUILT: build/llvm.BUILT src/libcxx.CLONED build/compiler-rt.BUILT build/musl.BUILT
+build/libcxx.BUILT: src/llvm-project.CLONED build/llvm.BUILT build/compiler-rt.BUILT build/musl.BUILT
 	mkdir -p build/libcxx
 	cd build/libcxx; cmake -G "Unix Makefiles" \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasm_standalone.cmake \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 		-DLIBCXX_ENABLE_THREADS:BOOL=OFF \
-		-DLIBCXX_ENABLE_STDIN:BOOL=OFF \
-		-DLIBCXX_ENABLE_STDOUT:BOOL=OFF \
 		-DCMAKE_BUILD_TYPE=RelWithDebugInfo \
 		-DLIBCXX_ENABLE_SHARED:BOOL=OFF \
 		-DLIBCXX_ENABLE_EXPERIMENTAL_LIBRARY:BOOL=OFF \
-		-DLIBCXX_ENABLE_FILESYSTEM:BOOL=OFF \
 		-DLIBCXX_ENABLE_EXCEPTIONS:BOOL=OFF \
-		-DLIBCXX_ENABLE_RTTI:BOOL=OFF \
 		-DLIBCXX_CXX_ABI=libcxxabi \
-		-DLIBCXX_CXX_ABI_INCLUDE_PATHS=$(ROOT_DIR)/src/libcxxabi/include \
-		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm $(DEBUG_PREFIX_MAP)" \
-		-DCMAKE_CXX_FLAGS="--target=wasm32-unknown-unknown-wasm $(DEBUG_PREFIX_MAP) -D_LIBCPP_HAS_MUSL_LIBC" \
+		-DLIBCXX_CXX_ABI_INCLUDE_PATHS=$(ROOT_DIR)/src/llvm-project/libcxxabi/include \
+		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
+		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) -D_LIBCPP_HAS_MUSL_LIBC" \
 		--debug-trycompile \
-		$(ROOT_DIR)/src/libcxx
+		$(ROOT_DIR)/src/llvm-project/libcxx
 	cd build/libcxx; make -j 8 install
 	touch build/libcxx.BUILT
 
-build/libcxxabi.BUILT: src/libcxxabi.CLONED build/libcxx.BUILT build/llvm.BUILT
+build/libcxxabi.BUILT: src/llvm-project.CLONED build/libcxx.BUILT build/llvm.BUILT
 	mkdir -p build/libcxxabi
 	cd build/libcxxabi; cmake -G "Unix Makefiles" \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
@@ -156,15 +122,15 @@ build/libcxxabi.BUILT: src/libcxxabi.CLONED build/libcxx.BUILT build/llvm.BUILT
 		-DCXX_SUPPORTS_CXX11=ON \
 		-DLLVM_COMPILER_CHECKED=ON \
 		-DCMAKE_BUILD_TYPE=RelWithDebugInfo \
-		-DLIBCXXABI_LIBCXX_PATH=$(ROOT_DIR)/src/libcxx \
+		-DLIBCXXABI_LIBCXX_PATH=$(ROOT_DIR)/src/llvm-project/libcxx \
 		-DLIBCXXABI_LIBCXX_INCLUDES=$(ROOT_DIR)/sysroot/include/c++/v1 \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasm_standalone.cmake \
-		-DCMAKE_C_FLAGS="--target=wasm32-unknown-unknown-wasm $(DEBUG_PREFIX_MAP)" \
-		-DCMAKE_CXX_FLAGS="--target=wasm32-unknown-unknown-wasm $(DEBUG_PREFIX_MAP) -D_LIBCPP_HAS_MUSL_LIBC" \
+		-DCMAKE_C_FLAGS="$(DEBUG_PREFIX_MAP)" \
+		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) -D_LIBCPP_HAS_MUSL_LIBC" \
 		-DUNIX:BOOL=ON \
 		--debug-trycompile \
-		$(ROOT_DIR)/src/libcxxabi
+		$(ROOT_DIR)/src/llvm-project/libcxxabi
 	cd build/libcxxabi; make -j 8 install
 	touch build/libcxxabi.BUILT
 
@@ -175,7 +141,6 @@ sysroot/include/wasmception.h: basics/wasmception.h
 
 sysroot/lib/wasmception.wasm: build/llvm.BUILT basics/wasmception.c
 	dist/bin/clang \
-		--target=wasm32-unknown-unknown-wasm \
 		--sysroot=./sysroot basics/wasmception.c \
 		-c -O3 -g $(DEBUG_PREFIX_MAP) \
 		-o sysroot/lib/wasmception.wasm
@@ -183,7 +148,7 @@ sysroot/lib/wasmception.wasm: build/llvm.BUILT basics/wasmception.c
 build: build/llvm.BUILT build/musl.BUILT build/compiler-rt.BUILT build/libcxxabi.BUILT build/libcxx.BUILT $(BASICS)
 
 strip: build/llvm.BUILT
-	cd dist/bin; strip clang-8 llc lld llvm-ar
+	cd dist/bin; strip clang-$(LLVM_VERSION) llc lld llvm-ar
 
 collect-sources:
 	-rm -rf build/sources build/sources.txt
@@ -196,13 +161,8 @@ collect-sources:
 	echo "cd build/sources && git push -f git@github.com:yurydelendik/wasmception.git v$(VERSION)"
 
 revisions:
-	cd src/llvm; echo "LLVM_REV=`svn info --show-item revision`"
-	cd src/llvm/tools/clang; echo "CLANG_REV=`svn info --show-item revision`"
-	cd src/llvm/tools/lld; echo "LLD_REV=`svn info --show-item revision`"
+	cd src/llvm-project; echo "LLVM_PROJECT_SHA=`git log -1 --format="%H"`"
 	cd src/musl; echo "MUSL_SHA=`git log -1 --format="%H"`"
-	cd src/compiler-rt; echo "COMPILER_RT_REV=`svn info --show-item revision`"
-	cd src/libcxx; echo "LIBCXX_REV=`svn info --show-item revision`"
-	cd src/libcxxabi; echo "LIBCXXABI_REV=`svn info --show-item revision`"
 
 OS_NAME=$(shell uname -s | tr '[:upper:]' '[:lower:]')
 pack:
