@@ -13,7 +13,7 @@ VERSION=0.2
 DEBUG_PREFIX_MAP=-fdebug-prefix-map=$(ROOT_DIR)=wasmception://v$(VERSION)
 WASM_TRIPLE=wasm32-unknown-unknown-wasm
 LLVM_VERSION=9
-#DEFAULT_SYSROOT_CFG=-DDEFAUT_SYSROOT=$(ROOT_DIR)/sysroot
+#DEFAULT_SYSROOT_CFG=-DDEFAULT_SYSROOT=$(ROOT_DIR)/sysroot
 
 default: build
 ifdef DEFAULT_SYSROOT_CFG
