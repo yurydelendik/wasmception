@@ -103,7 +103,7 @@ build/musl.BUILT: src/musl.CLONED build/llvm.BUILT
 		--prefix=$(ROOT_DIR)/sysroot \
 		--enable-debug \
 		wasm32
-	make -C build/musl -j 8 install CROSS_COMPILE=$(ROOT_DIR)/dist/bin/llvm-
+	$(MAKE) -C build/musl install CROSS_COMPILE=$(ROOT_DIR)/dist/bin/llvm-
 	cp src/musl/arch/wasm32/libc.imports sysroot/lib/
 	touch build/musl.BUILT
 
