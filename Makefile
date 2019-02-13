@@ -133,7 +133,7 @@ build/libcxx.BUILT: src/llvm-project.CLONED build/llvm.BUILT build/compiler-rt.B
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 		-DLIBCXX_ENABLE_THREADS:BOOL=OFF \
-		-DCMAKE_BUILD_TYPE=RelWithDebugInfo \
+		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-DLIBCXX_ENABLE_SHARED:BOOL=OFF \
 		-DLIBCXX_ENABLE_EXPERIMENTAL_LIBRARY:BOOL=OFF \
 		-DLIBCXX_ENABLE_EXCEPTIONS:BOOL=OFF \
@@ -157,7 +157,7 @@ build/libcxxabi.BUILT: src/llvm-project.CLONED build/libcxx.BUILT build/llvm.BUI
 		-DLIBCXXABI_ENABLE_THREADS:BOOL=OFF \
 		-DCXX_SUPPORTS_CXX11=ON \
 		-DLLVM_COMPILER_CHECKED=ON \
-		-DCMAKE_BUILD_TYPE=RelWithDebugInfo \
+		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-DLIBCXXABI_LIBCXX_PATH=$(ROOT_DIR)/src/llvm-project/libcxx \
 		-DLIBCXXABI_LIBCXX_INCLUDES=$(ROOT_DIR)/sysroot/include/c++/v1 \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
