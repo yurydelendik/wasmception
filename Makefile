@@ -27,6 +27,9 @@ CMAKE_GENERATOR:="Unix Makefiles"
 CMAKE_MAKE_PROGRAM:="$(MAKE)"
 endif
 
+CLANG_VERSION_STRING=$(shell "${ROOT_DIR}/dist/bin/clang" --version | perl -ne '/clang version ([\d.]*)/ && print "$$1";')
+
+
 ifeq ($(shell test "${LLVM_VERSION}" -gt 7; echo $$?),0)
 # LLVM versions greater than 7
 LLVM_TARGETS_TO_BUILD:=-DLLVM_TARGETS_TO_BUILD=WebAssembly
@@ -116,7 +119,7 @@ build/compiler-rt.BUILT: src/llvm-project.CLONED build/llvm.BUILT
 		-DCMAKE_C_FLAGS="-O1 $(DEBUG_PREFIX_MAP)" \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCOMPILER_RT_OS_DIR=. \
-		-DCMAKE_INSTALL_PREFIX=$(ROOT_DIR)/dist/lib/clang/$(LLVM_VERSION).0.0/ \
+		-DCMAKE_INSTALL_PREFIX=$(ROOT_DIR)/dist/lib/clang/${CLANG_VERSION_STRING}/ \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 		$(ROOT_DIR)/src/llvm-project/compiler-rt/lib/builtins
 	cd build/compiler-rt; "${CMAKE_MAKE_PROGRAM}" install
