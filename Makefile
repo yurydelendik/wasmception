@@ -58,6 +58,7 @@ ifdef LLVM_PROJECT_SHA
 	cd src/llvm-project; git checkout $(LLVM_PROJECT_SHA)
 endif
 endif
+	cd src/llvm-project/libcxx && patch -Np1 -i "${ROOT_DIR}/patches/libcxx-musl_compat.patch" ||:
 	touch src/llvm-project.CLONED
 
 src/musl.CLONED:

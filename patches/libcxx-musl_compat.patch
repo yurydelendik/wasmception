@@ -1,0 +1,86 @@
+diff --git a/include/__config b/include/__config
+index ca850d3..c467d6e 100644
+--- a/include/__config
++++ b/include/__config
+@@ -296,14 +296,10 @@ typedef __char32_t char32_t;
+ #define _LIBCPP_HAS_C11_FEATURES
+ #elif defined(__linux__)
+ #include <features.h>
+-#if __GLIBC_PREREQ(2, 15)
+ #define _LIBCPP_HAS_QUICK_EXIT
+-#endif
+-#if __GLIBC_PREREQ(2, 17)
+ #define _LIBCPP_HAS_C11_FEATURES
+ #endif
+ #endif
+-#endif
+
+ #if (__has_feature(cxx_noexcept))
+ #  define _NOEXCEPT noexcept
+diff --git a/include/locale b/include/locale
+index 6d617e7..1bd4187 100644
+--- a/include/locale
++++ b/include/locale
+@@ -10,7 +10,6 @@
+
+ #ifndef _LIBCPP_LOCALE
+ #define _LIBCPP_LOCALE
+-
+ /*
+     locale synopsis
+
+@@ -837,7 +836,7 @@ __num_get_signed_integral(const char* __a, const char* __a_end,
+         typename remove_reference<decltype(errno)>::type __save_errno = errno;
+         errno = 0;
+         char *__p2;
+-        long long __ll = strtoll_l(__a, &__p2, __base, _LIBCPP_GET_C_LOCALE);
++        long long __ll = strtoll(__a, &__p2, __base);
+         typename remove_reference<decltype(errno)>::type __current_errno = errno;
+         if (__current_errno == 0)
+             errno = __save_errno;
+@@ -877,7 +876,7 @@ __num_get_unsigned_integral(const char* __a, const char* __a_end,
+         typename remove_reference<decltype(errno)>::type __save_errno = errno;
+         errno = 0;
+         char *__p2;
+-        unsigned long long __ll = strtoull_l(__a, &__p2, __base, _LIBCPP_GET_C_LOCALE);
++        unsigned long long __ll = strtoull(__a, &__p2, __base);
+         typename remove_reference<decltype(errno)>::type __current_errno = errno;
+         if (__current_errno == 0)
+             errno = __save_errno;
+@@ -907,7 +906,7 @@ __num_get_float(const char* __a, const char* __a_end, ios_base::iostate& __err)
+         typename remove_reference<decltype(errno)>::type __save_errno = errno;
+         errno = 0;
+         char *__p2;
+-        long double __ld = strtold_l(__a, &__p2, _LIBCPP_GET_C_LOCALE);
++        long double __ld = strtold(__a, &__p2);
+         typename remove_reference<decltype(errno)>::type __current_errno = errno;
+         if (__current_errno == 0)
+             errno = __save_errno;
+diff --git a/src/locale.cpp b/src/locale.cpp
+index 79cb5c9..951119c 100644
+--- a/src/locale.cpp
++++ b/src/locale.cpp
+@@ -990,7 +990,7 @@ ctype<char>::do_narrow(const char_type* low, const char_type* high, char dfault,
+     return low;
+ }
+
+-#ifdef EMSCRIPTEN
++#ifdef __musl__
+ extern "C" const unsigned short ** __ctype_b_loc();
+ extern "C" const int ** __ctype_tolower_loc();
+ extern "C" const int ** __ctype_toupper_loc();
+@@ -1011,14 +1011,8 @@ ctype<char>::classic_table()  _NOEXCEPT
+     return _ctype+1; // internal ctype mask table defined in msvcrt.dll
+ // This is assumed to be safe, which is a nonsense assumption because we're
+ // going to end up dereferencing it later...
+-#elif defined(EMSCRIPTEN)
+-    return *__ctype_b_loc();
+ #else
+-    // Platform not supported: abort so the person doing the port knows what to
+-    // fix
+-# warning  ctype<char>::classic_table() is not implemented
+-    abort();
+-    return NULL;
++    return (const unsigned long *)*__ctype_b_loc();
+ #endif
+ }
