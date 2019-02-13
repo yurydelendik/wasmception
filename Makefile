@@ -27,6 +27,14 @@ CMAKE_GENERATOR:=Unix Makefiles
 CMAKE_MAKE_PROGRAM:="$(MAKE)"
 endif
 
+ifeq ($(shell test "${LLVM_VERSION}" -gt 7; echo $$?),0)
+# LLVM versions greater than 7
+LLVM_TARGETS_TO_BUILD:=-DLLVM_TARGETS_TO_BUILD=WebAssembly
+else
+# witl LLVM versions 7 or earlier Webassembly is still experimental
+LLVM_TARGETS_TO_BUILD:=-DLLVM_TARGETS_TO_BUILD= -DLLVM_EXPERIMENTAL_TARGETS_TO_BUILD=WebAssembly
+endif
+
 default: build
 ifdef DEFAULT_SYSROOT_CFG
 	echo "Use $(DEBUG_PREFIX_MAP)"
@@ -63,7 +71,7 @@ build/llvm.BUILT: src/llvm-project.CLONED
 	cd build/llvm; cmake -G "${CMAKE_GENERATOR}" \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCMAKE_INSTALL_PREFIX=$(ROOT_DIR)/dist \
-		-DLLVM_TARGETS_TO_BUILD=WebAssembly \
+		${LLVM_TARGETS_TO_BUILD} \
 		-DLLVM_DEFAULT_TARGET_TRIPLE=$(WASM_TRIPLE) \
 		$(DEFAULT_SYSROOT_CFG) \
 		-DLLVM_EXTERNAL_CLANG_SOURCE_DIR=$(ROOT_DIR)/src/llvm-project/clang \
