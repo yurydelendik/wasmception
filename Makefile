@@ -15,6 +15,18 @@ WASM_TRIPLE=wasm32-unknown-unknown-wasm
 LLVM_VERSION=9
 #DEFAULT_SYSROOT_CFG=-DDEFAULT_SYSROOT=$(ROOT_DIR)/sysroot
 
+
+NINJA:=$(shell which ninja)
+
+
+ifneq (${NINJA},)
+CMAKE_GENERATOR:=Ninja
+CMAKE_MAKE_PROGRAM:="${NINJA}"
+else
+CMAKE_GENERATOR:=Unix Makefiles
+CMAKE_MAKE_PROGRAM:="$(MAKE)"
+endif
+
 default: build
 ifdef DEFAULT_SYSROOT_CFG
 	echo "Use $(DEBUG_PREFIX_MAP)"
@@ -48,7 +60,7 @@ endif
 
 build/llvm.BUILT: src/llvm-project.CLONED
 	mkdir -p build/llvm
-	cd build/llvm; cmake -G "Unix Makefiles" \
+	cd build/llvm; cmake -G "${CMAKE_GENERATOR}" \
 		-DCMAKE_BUILD_TYPE=MinSizeRel \
 		-DCMAKE_INSTALL_PREFIX=$(ROOT_DIR)/dist \
 		-DLLVM_TARGETS_TO_BUILD=WebAssembly \
@@ -58,7 +70,7 @@ build/llvm.BUILT: src/llvm-project.CLONED
 		-DLLVM_EXTERNAL_LLD_SOURCE_DIR=$(ROOT_DIR)/src/llvm-project/lld \
 		-DLLVM_ENABLE_PROJECTS="lld;clang" \
 		$(ROOT_DIR)/src/llvm-project/llvm
-	cd build/llvm; $(MAKE) -j 8 \
+	+cd build/llvm; "${CMAKE_MAKE_PROGRAM}" \
 		install-clang \
 		install-lld \
 		install-llc \
@@ -85,7 +97,7 @@ build/musl.BUILT: src/musl.CLONED build/llvm.BUILT
 
 build/compiler-rt.BUILT: src/llvm-project.CLONED build/llvm.BUILT
 	mkdir -p build/compiler-rt
-	cd build/compiler-rt; cmake -G "Unix Makefiles" \
+	cd build/compiler-rt; cmake -G "${CMAKE_GENERATOR}" \
 		-DCMAKE_BUILD_TYPE=RelWithDebInfo \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasm_standalone.cmake \
 		-DCOMPILER_RT_BAREMETAL_BUILD=On \
@@ -99,13 +111,13 @@ build/compiler-rt.BUILT: src/llvm-project.CLONED build/llvm.BUILT
 		-DCMAKE_INSTALL_PREFIX=$(ROOT_DIR)/dist/lib/clang/$(LLVM_VERSION).0.0/ \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 		$(ROOT_DIR)/src/llvm-project/compiler-rt/lib/builtins
-	cd build/compiler-rt; make -j 8 install
+	+cd build/compiler-rt; "${CMAKE_MAKE_PROGRAM}" install
 	cp -R $(ROOT_DIR)/build/llvm/lib/clang $(ROOT_DIR)/dist/lib/
 	touch build/compiler-rt.BUILT
 
 build/libcxx.BUILT: src/llvm-project.CLONED build/llvm.BUILT build/compiler-rt.BUILT build/musl.BUILT
 	mkdir -p build/libcxx
-	cd build/libcxx; cmake -G "Unix Makefiles" \
+	cd build/libcxx; cmake -G "${CMAKE_GENERATOR}" \
 		-DCMAKE_TOOLCHAIN_FILE=$(ROOT_DIR)/wasm_standalone.cmake \
 		-DLLVM_CONFIG_PATH=$(ROOT_DIR)/build/llvm/bin/llvm-config \
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
@@ -120,12 +132,12 @@ build/libcxx.BUILT: src/llvm-project.CLONED build/llvm.BUILT build/compiler-rt.B
 		-DCMAKE_CXX_FLAGS="$(DEBUG_PREFIX_MAP) -D_LIBCPP_HAS_MUSL_LIBC" \
 		--debug-trycompile \
 		$(ROOT_DIR)/src/llvm-project/libcxx
-	cd build/libcxx; make -j 8 install
+	+cd build/libcxx; "${CMAKE_MAKE_PROGRAM}" install
 	touch build/libcxx.BUILT
 
 build/libcxxabi.BUILT: src/llvm-project.CLONED build/libcxx.BUILT build/llvm.BUILT
 	mkdir -p build/libcxxabi
-	cd build/libcxxabi; cmake -G "Unix Makefiles" \
+	cd build/libcxxabi; cmake -G "${CMAKE_GENERATOR}"\
 		-DCMAKE_VERBOSE_MAKEFILE:BOOL=ON \
 		-DCMAKE_CXX_COMPILER_WORKS=ON \
 		-DCMAKE_C_COMPILER_WORKS=ON \
@@ -144,7 +156,7 @@ build/libcxxabi.BUILT: src/llvm-project.CLONED build/libcxx.BUILT build/llvm.BUI
 		-DUNIX:BOOL=ON \
 		--debug-trycompile \
 		$(ROOT_DIR)/src/llvm-project/libcxxabi
-	cd build/libcxxabi; make -j 8 install
+	+cd build/libcxxabi; "${CMAKE_MAKE_PROGRAM}" install
 	touch build/libcxxabi.BUILT
 
 BASICS=sysroot/include/wasmception.h sysroot/lib/wasmception.wasm
