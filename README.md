@@ -1,3 +1,5 @@
+NOTE: this project is archived in favor of [WASI SDK](https://github.com/CraneStation/wasi-sdk/).
+
 # wasmception
 
 Minimal toolset for building wasm files
